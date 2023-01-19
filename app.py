@@ -1,23 +1,17 @@
 import os
-
 from flask import Flask
 import json
 import re
 import requests
 from flask import request
 from flask import Response
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver.remote.webdriver import By
-import selenium.webdriver.support.expected_conditions as EC  # noqa
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium import webdriver
-
+import configparser
 import undetected_chromedriver as uc
 
-app = Flask(name)
+app = Flask(__name__)
 
-proxy_url = 'http://192.168.99.100:8191/v1'
-
+config = configparser.ConfigParser()
+config.read('config.ini')
 #http://localhost:5000/buildrss?url=https%3A%2F%2Fwww6.yggtorrent.lol%2Frss%3Faction%3Dgenerate%26type%3Dcat%26id%3D2188%26passkey%3DbgrDpdX99JxOVqF4S9Y9tinoTqXUNG3O
 
 @app.route('/buildrss', methods=["GET"])
@@ -49,11 +43,12 @@ def buildrss():
 
 @app.route('/downloadtorrent', methods=["GET"])
 def downloadtorrent():
+    url = request.args.get('url')
     driver = uc.Chrome()
 
-    html = driver.get('https://www6.yggtorrent.lol/rss/download?id=981366&passkey=bgrDpdX99JxOVqF4S9Y9tinoTqXUNG3O%27)
+    html = driver.get(url)
     file = driver.page_source
     return  Response('test', mimetype='application/xml')
 
-if name == 'main':
+if __name__ == 'main':
     app.run()
