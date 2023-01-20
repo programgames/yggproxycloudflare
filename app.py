@@ -1,4 +1,6 @@
 import os
+import urllib.parse
+
 from flask import Flask
 import json
 import re
@@ -38,7 +40,8 @@ def buildrss():
 
     for match in matches:
         url = match.group()[5:-10]
-        url_with_proxy = f"{config['server']['url']}/downloadtorrent?url=%7Burl%7D"
+        newurl = urllib.parse.urlencode(url)
+        url_with_proxy = f"{config['server']['url']}/downloadtorrent?url={newurl}"
         rss = rss.replace(url, url_with_proxy)
 
     return Response(rss, mimetype='application/xml')
