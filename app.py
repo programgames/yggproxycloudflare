@@ -1,7 +1,8 @@
 import os
+import pickle
 import urllib.parse
 
-from flask import Flask
+from flask import Flask, send_file
 import json
 import re
 import requests
@@ -27,7 +28,13 @@ def buildrss():
     response = requests.post(config['proxy']['url'], headers=headers, data=json.dumps(data))
 
     response_data = json.loads(response.text)
+    cookies = response_data['solution']['cookies']
 
+    for cookie in cookies:
+        filename = os.path.join('cookies', cookie['name']) + '.txt'
+        os.remove(filename)
+        with open(filename, 'wb') as f:
+            pickle.dump(cookie, f)
     html_string = response_data["solution"]["response"]
     starts_at = html_string.index("<rss")
     ends_at = html_string.index("</rss>", starts_at)
@@ -40,7 +47,7 @@ def buildrss():
 
     for match in matches:
         url = match.group()[5:-10]
-        newurl = urllib.parse.urlencode(url)
+        newurl = urllib.parse.quote(url, safe='')
         url_with_proxy = f"{config['server']['url']}/downloadtorrent?url={newurl}"
         rss = rss.replace(url, url_with_proxy)
 
@@ -55,13 +62,21 @@ def downloadtorrent():
     chrome_options.add_argument(f'--download.default_directory={downloadfolder}')
 
     driver = uc.Chrome(options=chrome_options, headless=True)
+    with open(os.path.join('cookies', 'cf_clearance.txt'), 'rb') as f:
+        cloudflarecookie = pickle.load(f)
+        driver.add_cookie(cloudflarecookie)
+
+    with open(os.path.join('cookies', 'ygg_.txt'), 'rb') as f:
+        yggcookie = pickle.load(f)
+        driver.add_cookie(yggcookie)
 
     driver.get(url)
+    driver.quit()
     files = os.listdir(downloadfolder)
     files.sort(key=lambda x: os.path.getmtime(os.path.join(downloadfolder, x)))
     torrent = files[-1]
 
-    return Response('test', mimetype='application/xml')
+    return send_file(os.path.join('torrents', torrent), mimetype='application/xml', as_attachment=True)
 
 
 if __name__ == 'main':
