@@ -14,8 +14,7 @@ import undetected_chromedriver as uc
 app = Flask(__name__)
 
 config = configparser.ConfigParser()
-config.read('config.ini')
-
+config.read('config.local')
 
 # http://localhost:5000/buildrss?url=https%3A%2F%2Fwww6.yggtorrent.lol%2Frss%3Faction%3Dgenerate%26type%3Dcat%26id%3D2188%26passkey%3DbgrDpdX99JxOVqF4S9Y9tinoTqXUNG3O
 
@@ -31,6 +30,8 @@ def buildrss():
     cookies = response_data['solution']['cookies']
 
     for cookie in cookies:
+        if cookie['name'] != 'cf_clearance':
+            continue
         filename = os.path.join('cookies', cookie['name']) + '.txt'
         os.remove(filename)
         with open(filename, 'wb') as f:
@@ -61,14 +62,12 @@ def downloadtorrent():
     downloadfolder = config['server']['downloadFolder']
     chrome_options.add_argument(f'--download.default_directory={downloadfolder}')
 
-    driver = uc.Chrome(options=chrome_options, headless=True)
+    driver = uc.Chrome(options=chrome_options, headless=False)
+    driver.get(url)
+
     with open(os.path.join('cookies', 'cf_clearance.txt'), 'rb') as f:
         cloudflarecookie = pickle.load(f)
-        driver.add_cookie(cloudflarecookie)
-
-    with open(os.path.join('cookies', 'ygg_.txt'), 'rb') as f:
-        yggcookie = pickle.load(f)
-        driver.add_cookie(yggcookie)
+        driver.add_cookie({'name': cloudflarecookie['name'],'value': cloudflarecookie['value']})
 
     driver.get(url)
     driver.quit()
